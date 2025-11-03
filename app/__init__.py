@@ -1,8 +1,8 @@
-
 from flask import Flask, request, g
 from time import time
 import uuid
 from flask_cors import CORS
+import os
 from .extensions import db, migrate, jwt, bcrypt, socketio, limiter
 from .config import Config
 from .routes import register_routes
@@ -18,7 +18,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    
+
     @jwt.token_in_blocklist_loader
     def check_if_token_revoked(jwt_header, jwt_payload):
         from .models.token import RefreshToken
@@ -28,12 +28,23 @@ def create_app():
         jti = jwt_payload.get('jti')
         rt = RefreshToken.query.filter_by(jti=jti).first()
         return (rt is None) or rt.revoked or (rt.expires_at and rt.expires_at < datetime.utcnow())
+
     bcrypt.init_app(app)
-    socketio.init_app(app, cors_allowed_origins=app.config.get("ALLOWED_ORIGINS","*"))
+    socketio.init_app(app, cors_allowed_origins=app.config.get("ALLOWED_ORIGINS", "*"))
     limiter.init_app(app)
 
-    CORS(app, origins=app.config.get("ALLOWED_ORIGINS","*"))
+    # ✅ CORS configurado para o Painel Master (Vercel)
+    frontend_url = os.getenv("FRONTEND_URL", "https://sos-masterqs-u7fg.vercel.app")
 
+    CORS(app,
+         resources={r"/api/*": {"origins": [
+             frontend_url,
+             "https://sos-masterqs.vercel.app",
+             "http://localhost:3000"
+         ]}},
+         supports_credentials=True)
+
+    # 🔗 Registro de rotas e sockets
     register_routes(app)
     register_socket_events(socketio)
 
@@ -73,7 +84,7 @@ def create_app():
     def _files(filename):
         from flask import current_app
         from flask import send_from_directory
-        base = current_app.config.get("STORAGE_LOCAL_DIR","uploads")
+        base = current_app.config.get("STORAGE_LOCAL_DIR", "uploads")
         return send_from_directory(base, filename)
 
     return app

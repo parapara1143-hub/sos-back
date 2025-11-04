@@ -25,12 +25,12 @@ def create_app():
     # ============================================
     # ✅ CORS Configurado para TODOS os painéis
     # ============================================
-    frontend_url = os.getenv("FRONTEND_URL", "https://sos-masterqs.vercel.app")
+    frontend_url = os.getenv("FRONTEND_URL", "https://sos-masterqs-u7fg.vercel.app/")
 
     CORS(app,
          resources={r"/api/*": {"origins": [
              frontend_url,
-             "https://sos-masterqs.vercel.app",
+             "https://sos-masterqs-u7fg.vercel.app/",
              "https://sos-adminqs.vercel.app",
              "https://sos-mobileqs.vercel.app",
              "http://localhost:3000"
